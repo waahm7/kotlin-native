@@ -38,7 +38,7 @@ gradle-app.setting
 
 # local project files
 lib/
-.idea/
+.idea/*
 proto/compiler/protoc-artifacts
 proto/compiler/tests
 
@@ -68,3 +68,6 @@ compile_commands.json
 
 # clangd caches
 .clangd/
+
+# code style
+!.idea/codeStyles/
