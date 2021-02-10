@@ -2537,6 +2537,14 @@ standaloneTest("custom_hook") {
     source = "runtime/exceptions/custom_hook.kt"
 }
 
+task rethrow_exception(type: KonanLocalTest) {
+    source = "runtime/exceptions/rethrow.kt"
+}
+
+task throw_from_catch(type: KonanLocalTest) {
+    source = "runtime/exceptions/throw_from_catch.kt"
+}
+
 standaloneTest("runtime_math_exceptions") {
     enabled = (project.testTarget != 'wasm32')
     source = "stdlib_external/numbers/MathExceptionTest.kt"
