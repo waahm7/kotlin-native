@@ -36,6 +36,7 @@ public:
 
     ~InitSingletonTest() {
         globalConstructor_ = nullptr;
+        mm::ThreadRegistry::TestSupport::SetCurrentThreadData(nullptr);
         // Make sure to clean everything allocated by the tests.
         for (auto& threadData : threadDatas_) {
             threadData->objectFactoryThreadQueue().ClearForTests();
@@ -47,11 +48,19 @@ public:
 
     testing::MockFunction<void(ObjHeader*)>& constructor() { return constructor_; }
 
+    void SetUpCurrentThreadData(size_t threadIndex) {
+        mm::ThreadRegistry::TestSupport::SetCurrentThreadData(&threadData(threadIndex));
+    }
+
     OBJ_GETTER(InitThreadLocalSingleton, ObjHeader** location, size_t threadIndex) {
+        // Initialization routine checks current thread state under the hood. So we need to configure CurrentThreadData.
+        SetUpCurrentThreadData(threadIndex);
         RETURN_RESULT_OF(mm::InitThreadLocalSingleton, threadDatas_[threadIndex].get(), location, &typeInfo_, constructorImpl);
     }
 
     OBJ_GETTER(InitSingleton, ObjHeader** location, size_t threadIndex) {
+        // Initialization routine checks current thread state under the hood. So we need to configure CurrentThreadData.
+        SetUpCurrentThreadData(threadIndex);
         RETURN_RESULT_OF(mm::InitSingleton, threadDatas_[threadIndex].get(), location, &typeInfo_, constructorImpl);
     }
 
@@ -76,11 +85,12 @@ TEST_F(InitSingletonTest, InitThreadLocalSingleton) {
     ObjHeader* stackLocation = nullptr;
 
     ObjHeader* valueAtConstructor = nullptr;
-    EXPECT_CALL(constructor(), Call(_)).WillOnce([&location, &stackLocation, &valueAtConstructor](ObjHeader* value) {
-        EXPECT_THAT(value, stackLocation);
-        EXPECT_THAT(value, location);
-        valueAtConstructor = value;
-    });
+    EXPECT_CALL(constructor(), Call(_)).WillOnce(
+            [&location, &stackLocation, &valueAtConstructor](ObjHeader* value) {
+                EXPECT_THAT(value, stackLocation);
+                EXPECT_THAT(value, location);
+                valueAtConstructor = value;
+            });
     ObjHeader* value = InitThreadLocalSingleton(&location, 0, &stackLocation);
     EXPECT_THAT(value, stackLocation);
     EXPECT_THAT(value, location);
@@ -120,11 +130,12 @@ TEST_F(InitSingletonTest, InitSingleton) {
     ObjHeader* stackLocation = nullptr;
 
     ObjHeader* valueAtConstructor = nullptr;
-    EXPECT_CALL(constructor(), Call(_)).WillOnce([&location, &stackLocation, &valueAtConstructor](ObjHeader* value) {
-        EXPECT_THAT(value, stackLocation);
-        EXPECT_THAT(location, reinterpret_cast<ObjHeader*>(1));
-        valueAtConstructor = value;
-    });
+    EXPECT_CALL(constructor(), Call(_)).WillOnce(
+            [&location, &stackLocation, &valueAtConstructor](ObjHeader* value) {
+                EXPECT_THAT(value, stackLocation);
+                EXPECT_THAT(location, reinterpret_cast<ObjHeader*>(1));
+                valueAtConstructor = value;
+            });
     ObjHeader* value = InitSingleton(&location, 0, &stackLocation);
     EXPECT_THAT(value, stackLocation);
     EXPECT_THAT(value, location);
@@ -198,6 +209,7 @@ TEST_F(InitSingletonTest, InitSingletonConcurrent) {
 
     for (size_t i = 0; i < kThreadCount; ++i) {
         threads.emplace_back([this, i, &location, &stackLocations, &actual, &readyCount, &canStart]() {
+            SetUpCurrentThreadData(i);
             ++readyCount;
             while (!canStart) {
             }
@@ -232,6 +244,7 @@ TEST_F(InitSingletonTest, InitSingletonConcurrentFailing) {
 
     for (size_t i = 0; i < kThreadCount; ++i) {
         threads.emplace_back([this, i, &location, &stackLocations, &readyCount, &canStart]() {
+            SetUpCurrentThreadData(i);
             ++readyCount;
             while (!canStart) {
             }
