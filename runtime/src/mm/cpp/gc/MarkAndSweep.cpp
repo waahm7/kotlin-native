@@ -5,6 +5,8 @@
 
 #include "MarkAndSweep.hpp"
 
+#include "Cleaner.h"
+#include "WorkerBoundReference.h"
 #include "../ExtraObjectData.hpp"
 #include "../GlobalData.hpp"
 #include "../ObjectFactory.hpp"
@@ -19,7 +21,7 @@ namespace {
 // This is copied verbatim from legacy MM.
 // TODO: Come up with a better way to iterate object fields.
 template <typename func>
-inline void traverseObjectFields(ObjHeader* obj, func process) {
+inline void traverseObjectFields(ObjHeader* obj, func process) noexcept {
     const TypeInfo* typeInfo = obj->type_info();
     if (typeInfo != theArrayTypeInfo) {
         for (int index = 0; index < typeInfo->objOffsetsCount_; index++) {
@@ -31,6 +33,28 @@ inline void traverseObjectFields(ObjHeader* obj, func process) {
         for (uint32_t index = 0; index < array->count_; index++) {
             process(*ArrayAddressOfElementAt(array, index));
         }
+    }
+}
+
+// Not inlining this call as it affects deallocation performance for
+// all types.
+NO_INLINE RUNTIME_NOTHROW void runFinalizers(ObjHeader* obj) {
+    auto* type_info = obj->type_info();
+    if (type_info == theCleanerImplTypeInfo) {
+        DisposeCleaner(obj);
+    }
+    if (type_info == theWorkerBoundReferenceTypeInfo) {
+        DisposeWorkerBoundReference(obj);
+    }
+}
+
+void DestroyObject(ObjHeader* object) noexcept {
+    auto* type_info = object->type_info();
+    if ((type_info->flags_ & TF_HAS_FINALIZER) != 0) {
+        runFinalizers(object);
+    }
+    if (object->has_meta_object()) {
+        ObjHeader::destroyMetaObject(object);
     }
 }
 
@@ -111,7 +135,7 @@ void mm::MarkAndSweep::Collection::Sweep() noexcept {
                 ++it;
                 continue;
             case ObjectData::Color::kWhite:
-                // TODO: Finalizers, including destroying ExtraObjectData.
+                DestroyObject(it->IsArray() ? it->GetArrayHeader()->obj() : it->GetObjHeader());
                 iter.EraseAndAdvance(it);
                 continue;
         }
