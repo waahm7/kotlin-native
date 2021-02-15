@@ -4334,6 +4334,7 @@ if (PlatformInfo.isAppleTarget(project)) {
     }
 
     interopTestMultifile("interop_objc_tests") {
+        enabled = !isExperimentalMM  // Experimental MM does not support Obj-C weaks yet.
         source = "interop/objc/tests/"
         interop = 'objcTests'
         flags = ['-tr', '-e', 'main']
@@ -4588,7 +4589,8 @@ dynamicTest("interop_kt42397") {
 }
 
 dynamicTest("interop_cleaners_main_thread") {
-    disabled = (project.target.name != project.hostName)
+    disabled = (project.target.name != project.hostName) ||
+        isExperimentalMM  // Experimental MM doesn't support multiple mutators yet.
     source = "interop/cleaners/cleaners.kt"
     cSource = "$projectDir/interop/cleaners/main_thread.cpp"
     clangTool = "clang++"
