@@ -5,6 +5,7 @@
 
 #include "MarkAndSweep.hpp"
 
+#include "../ExtraObjectData.hpp"
 #include "../GlobalData.hpp"
 #include "../ObjectFactory.hpp"
 #include "../RootSet.hpp"
@@ -93,6 +94,10 @@ void mm::MarkAndSweep::Collection::Mark() noexcept {
         }
 
         traverseObjectFields(top, [this](ObjHeader* field) noexcept { stack_.push_back(field); });
+
+        if (auto* extraObjectData = mm::ExtraObjectData::Get(top)) {
+            stack_.push_back(*extraObjectData->GetWeakCounterLocation());
+        }
     }
 }
 

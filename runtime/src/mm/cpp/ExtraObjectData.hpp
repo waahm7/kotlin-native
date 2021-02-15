@@ -23,6 +23,10 @@ public:
     MetaObjHeader* AsMetaObjHeader() noexcept { return reinterpret_cast<MetaObjHeader*>(this); }
     static ExtraObjectData& FromMetaObjHeader(MetaObjHeader* header) noexcept { return *reinterpret_cast<ExtraObjectData*>(header); }
 
+    // Get installed `ExtraObjectData` or `nullptr`.
+    static ExtraObjectData* Get(const ObjHeader* object) noexcept { return reinterpret_cast<ExtraObjectData*>(object->meta_object_or_null()); }
+    static ExtraObjectData& GetOrInstall(ObjHeader* object) noexcept { return FromMetaObjHeader(object->meta_object()); }
+
     static ExtraObjectData& Install(ObjHeader* object) noexcept;
     static void Uninstall(ObjHeader* object) noexcept;
 
@@ -43,7 +47,6 @@ private:
     void* associatedObject_ = nullptr;
 #endif
 
-    // TODO: Need to respect when marking.
     ObjHeader* weakReferenceCounter_ = nullptr;
 };
 
