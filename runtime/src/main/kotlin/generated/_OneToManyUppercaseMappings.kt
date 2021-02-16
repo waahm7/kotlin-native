@@ -30,7 +30,7 @@ private val values = arrayOf(
     "\u054E\u0546", "\u0544\u053D", 
 )
 
-internal fun Char.uppercaseSpecialCasing(): String? {
+internal fun Char.oneToManyUppercase(): String? {
     val code = this.toInt()
     val index = binarySearchRange(keys, code)
     if (index >= 0 && keys[index] == code) {
@@ -40,5 +40,5 @@ internal fun Char.uppercaseSpecialCasing(): String? {
 }
 
 internal fun Char.uppercaseImpl(): String {
-    return uppercaseSpecialCasing() ?: uppercaseCharImpl().toString()
+    return oneToManyUppercase() ?: uppercaseCharImpl().toString()
 }
