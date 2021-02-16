@@ -2430,6 +2430,16 @@ task utf8(type: KonanLocalTest) {
     source = "runtime/text/utf8.kt"
 }
 
+task isCased(type: KonanLocalTest) {
+    source = "runtime/text/_isCased.kt"
+    expectedExitStatus = 0
+}
+
+task isCaseIgnorable(type: KonanLocalTest) {
+    source = "runtime/text/_isCaseIgnorable.kt"
+    expectedExitStatus = 0
+}
+
 task catch1(type: KonanLocalTest) {
     expectedFail = (project.testTarget == 'wasm32') // Uses exceptions.
     goldValue = "Before\nCaught Throwable\nDone\n"
