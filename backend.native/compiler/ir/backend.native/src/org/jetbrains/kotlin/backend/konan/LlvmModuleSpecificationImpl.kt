@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrPackageFragment
 import org.jetbrains.kotlin.library.KotlinLibrary
 
 internal abstract class LlvmModuleSpecificationBase(protected val cachedLibraries: CachedLibraries) : LlvmModuleSpecification {
@@ -25,8 +26,8 @@ internal abstract class LlvmModuleSpecificationBase(protected val cachedLibrarie
     override fun containsModule(module: ModuleDescriptor): Boolean =
             module.konanLibrary.let { it == null || containsLibrary(it) }
 
-    override fun containsFile(irFile: IrFile): Boolean =
-            irFile.konanLibrary.let { it == null || containsLibrary(it) }
+    override fun containsPackageFragment(packageFragment: IrPackageFragment): Boolean =
+            packageFragment.konanLibrary.let { it == null || containsLibrary(it) }
 
     override fun containsDeclaration(declaration: IrDeclaration): Boolean =
             declaration.konanLibrary.let { it == null || containsLibrary(it) }

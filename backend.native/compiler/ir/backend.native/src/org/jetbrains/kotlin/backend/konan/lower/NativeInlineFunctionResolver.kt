@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fileOrNull
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 
 // TODO: This is a bit hacky. Think about adopting persistent IR ideas.
 internal class NativeInlineFunctionResolver(override val context: Context) : DefaultInlineFunctionResolver(context) {
@@ -41,8 +42,7 @@ internal class NativeInlineFunctionResolver(override val context: Context) : Def
 
         LocalClassesInInlineLambdasLowering(context).lower(body, function)
 
-        val file = function.fileOrNull
-        if (file != null && context.llvmModuleSpecification.containsFile(file)) {
+        if (context.llvmModuleSpecification.containsPackageFragment(function.getPackageFragment()!!)) {
             // Do not extract local classes off of inline functions from cached libraries.
             LocalClassesInInlineFunctionsLowering(context).lower(body, function)
             LocalClassesExtractionFromInlineFunctionsLowering(context).lower(body, function)
