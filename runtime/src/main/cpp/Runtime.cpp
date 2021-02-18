@@ -163,8 +163,8 @@ void deinitRuntime(RuntimeState* state, bool destroyRuntime) {
   if (destroyRuntime)
     InitOrDeinitGlobalVariables(DEINIT_GLOBALS, state->memoryState);
   auto workerId = GetWorkerId(state->worker);
-  WorkerDeinit(state->worker);
   DeinitMemory(state->memoryState, destroyRuntime);
+  WorkerDeinit(state->worker);
   konanDestructInstance(state);
   WorkerDestroyThreadDataIfNeeded(workerId);
   ::runtimeState = kInvalidRuntime;
