@@ -202,6 +202,22 @@ class Locker {
   pthread_mutex_t* lock_;
 };
 
+// We have to acquire a lock during worker deinit, when the current thread is
+// unregistered and its TLS may be already deallocated. Use this locker for
+// such places because it doesn't access current thread state.
+class DeinitLocker {
+public:
+  explicit DeinitLocker(pthread_mutex_t* lock) : lock_(lock) {
+    pthread_mutex_lock(lock_);
+  }
+  ~DeinitLocker() {
+    pthread_mutex_unlock(lock_);
+  }
+
+private:
+    pthread_mutex_t* lock_;
+};
+
 class Future {
  public:
   Future(KInt id) : state_(SCHEDULED), id_(id) {
@@ -303,7 +319,9 @@ class State {
 
   void destroyWorkerUnlocked(Worker* worker) {
     {
-      Locker locker(&lock_);
+      // We destroy a worker when its thread is already unresigtered from the memory subsystem,
+      // so there is no need to wrap the lock with thread state switch.
+      DeinitLocker locker(&lock_);
       auto id = worker->id();
       auto it = workers_.find(id);
       if (it != workers_.end()) {
@@ -475,7 +493,9 @@ class State {
   KInt nextFutureId() { return currentFutureId_++; }
 
   void destroyWorkerThreadDataUnlocked(KInt id) {
-    Locker locker(&lock_);
+    // We destroy worker data when its thread is already unresigtered from the memory subsystem,
+    // so there is no need to wrap the lock with thread state switch.
+    DeinitLocker locker(&lock_);
     auto it = terminating_native_workers_.find(id);
     if (it == terminating_native_workers_.end()) return;
     // If this worker was not joined, detach it to free resources.
@@ -753,8 +773,6 @@ Worker* WorkerInit(KBoolean errorReporting) {
 
 void WorkerDeinit(Worker* worker) {
 #if WITH_WORKERS
-  // TODO: This function is called from deinitRuntime. Do we really need to switch state here, not there?
-  mm::CurrentThreadStateGuard guard(mm::ThreadState::kNative);
   ::g_worker = nullptr;
   theState()->destroyWorkerUnlocked(worker);
 #endif  // WITH_WORKERS
@@ -762,8 +780,6 @@ void WorkerDeinit(Worker* worker) {
 
 void WorkerDestroyThreadDataIfNeeded(KInt id) {
 #if WITH_WORKERS
-  // TODO: This function is called from deinitRuntime. Do we really need to switch state here, not there?
-  mm::CurrentThreadStateGuard guard(mm::ThreadState::kNative);
   theState()->destroyWorkerThreadDataUnlocked(id);
 #endif
 }
