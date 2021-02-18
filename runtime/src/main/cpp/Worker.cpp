@@ -741,7 +741,7 @@ KInt GetWorkerId(Worker* worker) {
 Worker* WorkerInit(KBoolean errorReporting) {
 #if WITH_WORKERS
   if (::g_worker != nullptr) return ::g_worker;
-  // TODO: This function is called from initRuntime. Do we really need to switch state here not there?
+  // TODO: This function is called from initRuntime. Do we really need to switch state here, not there?
   mm::CurrentThreadStateGuard guard(mm::ThreadState::kNative);
   Worker* worker = theState()->addWorkerUnlocked(errorReporting != 0, nullptr, WorkerKind::kOther);
   ::g_worker = worker;
@@ -753,7 +753,7 @@ Worker* WorkerInit(KBoolean errorReporting) {
 
 void WorkerDeinit(Worker* worker) {
 #if WITH_WORKERS
-  // TODO: This function is called from deinitRuntime. Do we really need to switch state here not there?
+  // TODO: This function is called from deinitRuntime. Do we really need to switch state here, not there?
   mm::CurrentThreadStateGuard guard(mm::ThreadState::kNative);
   ::g_worker = nullptr;
   theState()->destroyWorkerUnlocked(worker);
@@ -762,7 +762,7 @@ void WorkerDeinit(Worker* worker) {
 
 void WorkerDestroyThreadDataIfNeeded(KInt id) {
 #if WITH_WORKERS
-  // TODO: This function is called from deinitRuntime. Do we really need to switch state here not there?
+  // TODO: This function is called from deinitRuntime. Do we really need to switch state here, not there?
   mm::CurrentThreadStateGuard guard(mm::ThreadState::kNative);
   theState()->destroyWorkerThreadDataUnlocked(id);
 #endif
@@ -770,7 +770,9 @@ void WorkerDestroyThreadDataIfNeeded(KInt id) {
 
 void WaitNativeWorkersTermination() {
 #if WITH_WORKERS
-    theState()->waitNativeWorkersTerminationUnlocked(true, [](KInt worker) { return true; });
+  // TODO: This function is called from shutdownRuntime. Do we really need to switch state here, not there?
+  mm::CurrentThreadStateGuard guard(mm::ThreadState::kNative);
+  theState()->waitNativeWorkersTerminationUnlocked(true, [](KInt worker) { return true; });
 #endif
 }
 
